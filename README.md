@@ -26,9 +26,10 @@ solace-autodisco/
 ├── config.example.yaml      # Connection config template (copy to config.yaml)
 ├── requirements.txt
 ├── output/
-│   ├── raw/                 # Raw SEMP JSON extracts (gitignored)
-│   ├── reports/             # Mapped JSON + Excel reports (gitignored)
-│   └── taxonomy_rules.yaml  # Auto-derived + manually maintained taxonomy rules
+│   ├── raw/                      # Raw SEMP JSON extracts (gitignored)
+│   ├── reports/                  # Mapped JSON + Excel reports (gitignored)
+│   ├── taxonomy_rules.example.yaml  # Committed template — copy to taxonomy_rules.yaml
+│   └── taxonomy_rules.yaml       # Working copy; gitignored (contains company data)
 └── docs/
     ├── ACME Solace AI.docx    # Background and API reference
     └── ACME_Event_Governance_Roadmap_v1.0.docx  # Governance and lifecycle roadmap
