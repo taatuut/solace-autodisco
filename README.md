@@ -1,0 +1,2 @@
+# solace-autodisco
+solace-autodisco
