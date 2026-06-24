@@ -135,7 +135,9 @@ The mapper auto-derives rules from observed topics and stores them in `output/ta
 
 ### Tuning the taxonomy to your actual topic structure
 
-After the first run against a live broker, open the Excel report:
+> **Note:** Taxonomy tuning only makes sense when running against a broker with ACME's actual topic taxonomy. Runs against a demo or sandbox broker with non-standard topic naming will show mismatched or empty parsed columns — this is expected and not a problem. Perform the tuning steps below once connected to a broker that carries real ACME integration traffic.
+
+After that first run against a broker with ACME's actual topic taxonomy, open the Excel report:
 
 ```
 output/reports/pvm_solace_report_<timestamp>.xlsx
