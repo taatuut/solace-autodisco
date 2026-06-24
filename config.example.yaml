@@ -28,12 +28,17 @@ taxonomy:
   rules_file: "output/taxonomy_rules.yaml"
   # Topic separator character
   separator: "/"
-  # Expected topic level definitions (position -> semantic label)
-  # Adjust to match ACME's actual topic naming convention.
-  # Example: pvm/<env>/<domain>/<businessObject>/<eventType>/<version>
+  # Expected topic level definitions (position -> semantic label).
+  # IMPORTANT: Adjust these to match the actual topic strings on your broker.
+  # Run the pipeline once, open the Topic Catalogue sheet in the Excel report,
+  # and inspect the raw topic strings to determine the correct level mapping.
+  # The defaults below assume: pvm/<env>/<domain>/<businessObject>/<eventType>/<version>
+  # If level 1 shows application names (infor, opcenter, ...) instead of
+  # environments, your convention may be: <system>/<object>/<event>/... — adjust
+  # accordingly and rerun.
   levels:
-    0: "prefix"          # e.g. "pvm" or company prefix
-    1: "environment"     # e.g. prod, dev, test
+    0: "prefix"          # e.g. company prefix or source system identifier
+    1: "environment"     # e.g. prod, dev, test — or application/system name
     2: "domain"          # business domain / application area
     3: "businessObject"  # the entity the event is about (e.g. Order, Invoice)
     4: "eventType"       # action/verb (e.g. Created, Updated, Deleted)

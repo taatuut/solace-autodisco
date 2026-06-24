@@ -127,19 +127,37 @@ class SempClient:
 
     # --- Monitor sub-API (runtime state) ---
 
+    def _paginate_monitor(self, path: str, select_fields: str) -> list[dict]:
+        """Paginate a monitor endpoint; fall back to no select on 400.
+
+        SAP AEM's SEMP implementation rejects select parameters that reference
+        fields not available on that broker version. We try with select first
+        (smaller payload), and silently retry without it on a 400 so the
+        pipeline never hard-fails on monitor data.
+        """
+        try:
+            return self._paginate(path, {"select": select_fields})
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 400:
+                # Retry without select — accept all fields
+                return self._paginate(path)
+            raise
+
     def get_clients(self, vpn: str) -> list[dict]:
         """Currently connected clients (runtime view)."""
-        return self._paginate(f"/monitor/msgVpns/{vpn}/clients",
-                              {"select": "clientName,clientUsername,remoteAddress,"
-                                         "description,softwareVersion,platform,"
-                                         "rxMsgCount,txMsgCount,uptime"})
+        return self._paginate_monitor(
+            f"/monitor/msgVpns/{vpn}/clients",
+            "clientName,clientUsername,remoteAddress,"
+            "description,softwareVersion,platform,"
+            "rxMsgCount,txMsgCount,uptime"
+        )
 
     def get_queue_stats(self, vpn: str) -> list[dict]:
         """Queue operational stats from monitor API."""
-        return self._paginate(
+        return self._paginate_monitor(
             f"/monitor/msgVpns/{vpn}/queues",
-            {"select": "queueName,msgVpnName,bindCount,msgCount,msgSpoolUsage,"
-                       "rxMsgCount,txMsgCount,accessType,permission"}
+            "queueName,msgVpnName,bindCount,msgCount,msgSpoolUsage,"
+            "rxMsgCount,txMsgCount,accessType,permission"
         )
 
 

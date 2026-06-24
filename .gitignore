@@ -217,9 +217,10 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# ACME Solace AI - local config and output
+# ACME Solace AI - local config and output (all contain company-specific data)
 config.yaml
 output/raw/
 output/reports/
+output/taxonomy_rules.yaml
 *.xlsx
 **/.DS_Store
