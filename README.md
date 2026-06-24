@@ -135,6 +135,34 @@ Example: `acme/prod/sales/Order/Created/v1`
 
 The mapper auto-derives rules from observed topics and stores them in `output/taxonomy_rules.yaml`. Manually extend this file to handle exceptions, legacy topics, or wildcard subscriptions that cannot be auto-classified.
 
+### Tuning the taxonomy to your actual topic structure
+
+After the first run against a live broker, open the Excel report:
+
+```
+output/reports/pvm_solace_report_<timestamp>.xlsx
+```
+
+Go to the **Topic Catalogue** sheet. The first column (`Topic (raw)`) lists every unique topic string found on the broker. The remaining columns show how the current `config.yaml` level definitions parsed each segment.
+
+If the parsed columns look wrong — for example `environment` is showing application names, or `businessObject` is empty — the level definitions need to be adjusted.
+
+**To derive the correct mapping with Claude Desktop:**
+
+1. Copy a representative sample of 10–20 raw topic strings from the first column.
+2. If any topics contain sensitive application or business data, sanitise them by replacing real names with placeholders (e.g. `acme/prod/erp/SalesOrder/Created/v1`), keeping the *structure* intact.
+3. Paste the sample into Claude Desktop with this prompt:
+
+   > "Here are topic strings from our Solace broker. Analyse the structure and suggest the correct `taxonomy.levels` mapping for `config.yaml`, where each level position maps to a semantic label such as prefix, environment, domain, businessObject, eventType, or version. Topic samples: [paste here]"
+
+4. Claude will propose a `levels` block. Paste it into `config.yaml` under `taxonomy.levels` and rerun the pipeline:
+
+   ```bash
+   python3 run_pipeline.py --config config.yaml
+   ```
+
+5. Check the Topic Catalogue sheet again — the parsed columns should now reflect the correct semantic meaning for each segment.
+
 ### Taxonomy level configuration
 
 Edit `config.yaml` to match ACME's actual convention if it differs:
