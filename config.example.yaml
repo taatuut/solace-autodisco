@@ -1,0 +1,66 @@
+# ACME Solace AI - Connection Configuration
+# Copy this file to config.yaml and fill in your values.
+# config.yaml is gitignored - never commit credentials.
+
+semp:
+  # SEMP v2 base URL for your Solace broker / SAP AEM instance
+  # For self-managed broker: http(s)://<host>:<semp-port>
+  # For SAP AEM cloud: obtain from the service details in SAP Integration Suite
+  host: "https://your-broker-host:943"
+  # Message VPN to query (use "*" or leave blank to query all VPNs)
+  msg_vpn: "your-vpn-name"
+  # SEMP admin credentials
+  username: "admin"
+  password: "your-password"
+  # Set to false only for self-signed certs in dev/test
+  verify_ssl: true
+  # Pagination: max records per page (Solace default max is 100)
+  page_size: 100
+
+output:
+  # Directory for raw JSON extraction output
+  raw_dir: "output/raw"
+  # Directory for processed/report output
+  report_dir: "output/reports"
+
+taxonomy:
+  # Path to the taxonomy rules file (auto-generated or manually maintained)
+  rules_file: "output/taxonomy_rules.yaml"
+  # Topic separator character
+  separator: "/"
+  # Expected topic level definitions (position -> semantic label)
+  # Adjust to match ACME's actual topic naming convention.
+  # Example: pvm/<env>/<domain>/<businessObject>/<eventType>/<version>
+  levels:
+    0: "prefix"          # e.g. "pvm" or company prefix
+    1: "environment"     # e.g. prod, dev, test
+    2: "domain"          # business domain / application area
+    3: "businessObject"  # the entity the event is about (e.g. Order, Invoice)
+    4: "eventType"       # action/verb (e.g. Created, Updated, Deleted)
+    5: "version"         # schema version (e.g. v1, v2)
+
+# ---------------------------------------------------------------------------
+# OPTIONAL: Event Portal (Step 3b)
+# Required only for the Phase 2 event_portal_importer.py script.
+# The extract/map/report pipeline runs without this section.
+# ---------------------------------------------------------------------------
+event_portal:
+  # Solace Event Portal API token (from Cloud Console -> API Tokens)
+  api_token: "your-event-portal-api-token"
+  # Application Domain to target in Event Portal
+  application_domain: "ACME Integration"
+
+# ---------------------------------------------------------------------------
+# OPTIONAL: Collibra (Step 3c)
+# Required only for the Phase 2 collibra_exporter.py script.
+# The extract/map/report pipeline runs without this section.
+# Remove or leave commented out if Collibra is not in use.
+# ---------------------------------------------------------------------------
+collibra:
+  # Collibra Data Intelligence Cloud base URL
+  host: "https://your-tenant.collibra.com"
+  username: "your-collibra-user"
+  password: "your-collibra-password"
+  # Target community and domain in Collibra
+  community: "Integration Architecture"
+  domain: "Solace Event Catalog"

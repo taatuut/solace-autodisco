@@ -1,0 +1,27 @@
+derivedAt: '2026-06-24T21:57:52.682090'
+note: Auto-derived from SEMP extraction. Review and extend manually.
+environments:
+- dev
+- prod
+domains:
+- finance
+- sales
+- warehouse
+businessObjects:
+- Invoice
+- Order
+- Receipt
+- Stock
+eventTypes:
+- Cancelled
+- Created
+- Requested
+- Reserved
+- Updated
+topicPatternToBusinessObject:
+  acme/prod/sales/Order: Order
+  acme/prod/finance/Invoice: Invoice
+  acme/prod/warehouse/Stock: Stock
+  acme/prod/warehouse/Receipt: Receipt
+  acme/dev/sales/Order: Order
+domainToApplicationGroup: {}
