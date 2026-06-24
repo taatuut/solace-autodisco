@@ -222,5 +222,6 @@ config.yaml
 output/raw/
 output/reports/
 output/taxonomy_rules.yaml
+!output/taxonomy_rules.example.yaml
 *.xlsx
 **/.DS_Store

@@ -49,7 +49,13 @@ python3 -m pip install -r requirements.txt
 
 # Optionally, if needed upgrade pip
 python3 -m pip install --upgrade pip
+
+# Create local config and taxonomy rules from templates (once)
+cp config.example.yaml config.yaml
+cp output/taxonomy_rules.example.yaml output/taxonomy_rules.yaml
 ```
+
+Edit `config.yaml` with your SEMP credentials before running against a live broker.
 
 > All subsequent commands assume the venv is active (`source .venv/bin/activate`).
 

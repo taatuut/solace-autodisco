@@ -1,0 +1,36 @@
+# ACME Solace AI - Taxonomy Rules
+# This is the template file. Copy to output/taxonomy_rules.yaml before first run.
+#
+#   cp output/taxonomy_rules.example.yaml output/taxonomy_rules.yaml
+#
+# taxonomy_rules.yaml is gitignored — it contains company-specific extracted data.
+# This example file is committed and shows the expected structure only.
+#
+# The pipeline (taxonomy_mapper.py) auto-generates and updates taxonomy_rules.yaml
+# on every run. Use this file to manually pre-seed or override rules that the
+# auto-deriver cannot resolve (wildcard subscriptions, legacy topics, etc.).
+
+derivedAt: ''
+note: Auto-derived from SEMP extraction. Review and extend manually.
+
+# Observed environments (e.g. prod, dev, test)
+environments: []
+
+# Observed business domains
+domains: []
+
+# Observed business objects (entities events are about, e.g. Order, Invoice)
+businessObjects: []
+
+# Observed event types / verbs (e.g. Created, Updated, Deleted)
+eventTypes: []
+
+# Manual overrides: map a topic prefix (up to businessObject level) to a business object.
+# Example:
+#   acme/prod/sales/Order: Order
+topicPatternToBusinessObject: {}
+
+# Manual overrides: map a domain to one or more application group names.
+# Example:
+#   sales: [app_order_svc, app_erp_sap]
+domainToApplicationGroup: {}
