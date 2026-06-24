@@ -17,22 +17,28 @@ This project automates that discovery and produces three outputs:
 ## Project structure
 
 ```
-solace-autodisco/
+solace-autodisco/                          # committed to Git
 ├── src/
-│   ├── semp_extractor.py    # Step 1: Extract from SEMP v2 API
-│   ├── taxonomy_mapper.py   # Step 2: Map topics to ACME taxonomy
-│   └── report_generator.py  # Step 3a: Generate Excel report
-├── run_pipeline.py          # Single-command full pipeline
-├── config.example.yaml      # Connection config template (copy to config.yaml)
+│   ├── __init__.py
+│   ├── semp_extractor.py               # Step 1: Extract from SEMP v2 API
+│   ├── taxonomy_mapper.py              # Step 2: Map topics to ACME taxonomy
+│   └── report_generator.py            # Step 3a: Generate Excel report
+├── run_pipeline.py                     # Single-command full pipeline
+├── config.example.yaml                 # Connection config template
 ├── requirements.txt
 ├── output/
-│   ├── raw/                      # Raw SEMP JSON extracts (gitignored)
-│   ├── reports/                  # Mapped JSON + Excel reports (gitignored)
-│   ├── taxonomy_rules.example.yaml  # Committed template — copy to taxonomy_rules.yaml
-│   └── taxonomy_rules.yaml       # Working copy; gitignored (contains company data)
+│   └── taxonomy_rules.example.yaml    # Taxonomy rules template
 └── docs/
-    ├── ACME Solace AI.docx    # Background and API reference
-    └── ACME_Event_Governance_Roadmap_v1.0.docx  # Governance and lifecycle roadmap
+    ├── ACME Solace AI.docx
+    └── ACME_Event_Governance_Roadmap_v1.0.docx
+
+# created locally from templates, gitignored
+├── config.yaml                         # Your SEMP credentials
+├── .venv/                              # Python virtual environment
+└── output/
+    ├── raw/                            # Raw SEMP JSON extracts
+    ├── reports/                        # Mapped JSON + Excel reports
+    └── taxonomy_rules.yaml             # Working taxonomy rules (company data)
 ```
 
 ## Quick start
@@ -70,24 +76,17 @@ This runs the full extract → map → report pipeline with synthetic data and w
 
 ### Live broker
 
-1. Copy `config.example.yaml` to `config.yaml` and fill in your SEMP credentials:
-   ```yaml
-   semp:
-     host: "https://your-broker-host:943"
-     msg_vpn: "ACME_PROD"
-     username: "admin"
-     password: "your-password"
-   ```
+Fill in your SEMP credentials in `config.yaml` (created from the template in Prerequisites), then run:
 
-2. Run:
-   ```bash
-   python3 run_pipeline.py --config config.yaml
-   ```
+```bash
+python3 run_pipeline.py --config config.yaml
+```
 
-3. Or target a specific VPN:
-   ```bash
-   python3 run_pipeline.py --config config.yaml --vpn ACME_PROD
-   ```
+To target a specific VPN:
+
+```bash
+python3 run_pipeline.py --config config.yaml --vpn ACME_PROD
+```
 
 ### Running steps individually
 
@@ -102,13 +101,12 @@ python3 src/taxonomy_mapper.py
 python3 src/report_generator.py
 ```
 
-## Immediate next steps (after first run)
+## Immediate next steps (after first live run)
 
-1. **Connect to a real broker.** Copy `config.example.yaml` → `config.yaml`, fill in SEMP credentials, and run `python3 run_pipeline.py --config config.yaml --vpn ACME_PROD`.
-2. **Validate taxonomy parsing.** Open the generated Excel report → *Topic Catalogue* sheet. Check that business objects and event types are parsed correctly. If topics deviate from the expected convention, adjust the `taxonomy.levels` mapping in `config.yaml`.
-3. **Extend taxonomy rules.** Open `output/taxonomy_rules.yaml` and manually annotate any domains, business objects, or applications that were not auto-detected (wildcards, legacy topics, non-standard naming).
-4. **Review the Event Flows matrix.** The *Event Flows* sheet shows which applications consume which business objects. Share with the integration team to identify gaps and validate ownership.
-5. **Provision an Event Portal API token** and run the Phase 2 import script (planned) to push the catalogue into Event Portal Designer/Catalog.
+1. **Validate taxonomy parsing.** Open the generated Excel report → *Topic Catalogue* sheet. Check that business objects and event types are parsed correctly. If the parsed columns look wrong, follow the [taxonomy tuning guide](#tuning-the-taxonomy-to-your-actual-topic-structure) below.
+2. **Extend taxonomy rules.** Open `output/taxonomy_rules.yaml` and manually annotate any domains, business objects, or applications that were not auto-detected (wildcards, legacy topics, non-standard naming).
+3. **Review the Event Flows matrix.** The *Event Flows* sheet shows which applications consume which business objects. Share with the integration team to identify gaps and validate ownership.
+4. **Provision an Event Portal API token** and run the Phase 2 import script (planned) to push the catalogue into Event Portal Designer/Catalog.
 
 ## What is extracted (Step 1)
 
