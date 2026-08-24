@@ -25,6 +25,9 @@ solace-autodisco/                       # committed to Git
 │   └── report_generator.py            # Step 3: Generate Excel report
 ├── tests/
 │   └── test_pipeline.py                # Regression tests (see Tests below)
+├── .github/
+│   └── workflows/
+│       └── test.yml                    # CI: runs pytest on push/PR
 ├── run_pipeline.py                     # Single-command full pipeline
 ├── config.example.yaml                 # Connection config template
 ├── requirements.txt
@@ -314,6 +317,10 @@ Tests run the actual CLI entry points as subprocesses against an isolated tempor
 python3 -m pip install -r requirements-dev.txt
 pytest
 ```
+
+### Continuous Integration
+
+`.github/workflows/test.yml` runs on every push and pull request against `main`: it installs `requirements-dev.txt`, runs a `py_compile` sanity check on `run_pipeline.py` and each `src/` script, then runs the full `pytest` suite. It needs no secrets or a live broker — everything uses `--mock`, same as running the tests locally.
 
 ## References
 
