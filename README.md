@@ -12,7 +12,7 @@ This project automates that discovery and produces three outputs:
 |--------|------|-------------|
 | Raw broker data | `output/raw/semp_extract_*.json` | Full SEMP v2 extraction |
 | Mapped & enriched data | `output/reports/mapped_data_*.json` | Topics parsed, applications identified, business objects catalogued |
-| Excel report (Step 3a) | `output/reports/solace_autodisco_report_*.xlsx` | Seven-sheet workbook for stakeholder review |
+| Excel report (Step 3a) | `output/reports/solace_autodisco_report_*.xlsx` | Multi-sheet workbook for stakeholder review — 7 sheets, or 10 if manual taxonomy overrides are in use |
 
 ## Project structure
 
@@ -23,9 +23,13 @@ solace-autodisco/                       # committed to Git
 │   ├── semp_extractor.py               # Step 1: Extract from SEMP v2 API
 │   ├── taxonomy_mapper.py              # Step 2: Map topics to your taxonomy
 │   └── report_generator.py            # Step 3a: Generate Excel report
+├── tests/
+│   └── test_pipeline.py                # Regression tests (see Tests below)
 ├── run_pipeline.py                     # Single-command full pipeline
 ├── config.example.yaml                 # Connection config template
 ├── requirements.txt
+├── requirements-dev.txt                # Adds pytest, for running tests/
+├── pytest.ini
 └── output/
     └── taxonomy_rules.example.yaml    # Taxonomy rules template
 
@@ -35,7 +39,7 @@ solace-autodisco/                       # committed to Git
 └── output/
     ├── raw/                            # Raw SEMP JSON extracts
     ├── reports/                        # Mapped JSON + Excel reports
-    └── taxonomy_rules.yaml             # Working taxonomy rules (company data)
+    └── taxonomy_rules.yaml             # Auto-derived snapshot + persisted manual overrides
 ```
 
 ## Quick start
@@ -110,7 +114,7 @@ python3 src/report_generator.py --mock
 ## Immediate next steps (after first live run)
 
 1. **Validate taxonomy parsing.** Open the generated Excel report → *Topic Catalogue* sheet. Check that business objects and event types are parsed correctly. If the parsed columns look wrong, follow the [taxonomy tuning guide](#tuning-the-taxonomy-to-your-actual-topic-structure) below.
-2. **Extend taxonomy rules.** Open `output/taxonomy_rules.yaml` and manually annotate any domains, business objects, or applications that were not auto-detected (wildcards, legacy topics, non-standard naming).
+2. **Review the taxonomy snapshot and add overrides where needed.** Open `output/taxonomy_rules.yaml` to see what environments, domains, business objects, and event types were auto-detected. If something wasn't classified correctly, fix systematic issues by adjusting `taxonomy.levels` in `config.yaml`; for individual exceptions (wildcards, legacy topics), add entries under the `manual` keys instead — see [Manual taxonomy overrides](#manual-taxonomy-overrides).
 3. **Review the Event Flows matrix.** The *Event Flows* sheet shows which applications consume which business objects. Share with the integration team to identify gaps and validate ownership.
 4. **Provision an Event Portal API token** and run the Phase 2 import script (planned) to push the catalogue into Event Portal Designer/Catalog.
 
@@ -129,6 +133,8 @@ From the Solace SEMP v2 API (`/SEMP/v2/config` and `/SEMP/v2/monitor`):
 
 ## Topic taxonomy (Step 2)
 
+Every organisation names its topics differently. The taxonomy is what maps *your* raw topic strings into the business-meaningful facets (domain, business object, event type, ...) used throughout the Topic Catalogue, Business Objects, and Event Flows sheets in the Excel report — without it, the pipeline only has opaque topic strings to work with.
+
 Topics typically follow (or approximate) this structure:
 
 ```
@@ -137,7 +143,45 @@ Topics typically follow (or approximate) this structure:
 
 Example: `acme/prod/sales/Order/Created/v1`
 
-The mapper auto-derives rules from observed topics and stores them in `output/taxonomy_rules.yaml`. Manually extend this file to handle exceptions, legacy topics, or wildcard subscriptions that cannot be auto-classified.
+**Configuration** — the position-to-label mapping that controls parsing lives in `config.yaml` under `taxonomy.levels` (see [Taxonomy level configuration](#taxonomy-level-configuration) below). This is the only file that affects how topics are classified; adjust it to match your organisation's actual convention.
+
+**Usage** — on every run, the mapper parses each observed topic against the current `taxonomy.levels` and writes a summary of what it found (observed environments, domains, business objects, event types) to `output/taxonomy_rules.yaml`. Those observation lists are regenerated from scratch every run — they're a snapshot for review, not a persistent config. Topics that don't fit the convention, or wildcard subscriptions, show up with empty or `None` parsed columns in the report; fix systematic misclassifications by adjusting `taxonomy.levels` in `config.yaml`. For individual exceptions that `taxonomy.levels` can't fix, see [Manual taxonomy overrides](#manual-taxonomy-overrides) below.
+
+### Manual taxonomy overrides
+
+Some topics can't be classified correctly from parsing alone — non-standard legacy topics, wildcard subscriptions, or one-off exceptions to the convention. `output/taxonomy_rules.yaml` has two override maps for exactly this, each split into an `auto` and a `manual` sub-key:
+
+```yaml
+topicPatternToBusinessObject:
+  auto: {}      # regenerated every run from parsed topics — don't edit
+  manual: {}    # your corrections — persist across runs, win over auto
+domainToApplicationGroup:
+  auto: {}      # not currently auto-derived — always empty
+  manual: {}    # your groupings — persist across runs
+```
+
+Only edit the `manual` sub-keys — anything under `auto` is overwritten on the next run. Manual entries are read back on every subsequent run and always take precedence over the auto-derived value for the same key.
+
+- **`topicPatternToBusinessObject.manual`** — maps a topic prefix (the first 4 segments, up to the businessObject level) to a business object, overriding whatever parsing produced for that prefix.
+  ```yaml
+  topicPatternToBusinessObject:
+    manual:
+      acme/prod/legacy: Order
+  ```
+- **`domainToApplicationGroup.manual`** — declares that an application belongs to a domain, in addition to whatever the pipeline inferred from its subscriptions (it adds to the parsed set, it doesn't replace it).
+  ```yaml
+  domainToApplicationGroup:
+    manual:
+      sales: [app_order_svc, app_erp_sap]
+  ```
+
+Rerun the pipeline to apply them:
+
+```bash
+python3 run_pipeline.py --config config.yaml
+```
+
+When manual overrides are present, the Excel report gains three additional sheets — **Applications (Overrides)**, **Business Objects (Overrides)**, and **Event Flows (Overrides)** — showing the same data recomputed with your overrides applied, alongside the unmodified parsed-only sheets so you can compare both. The Summary sheet reports whether any overrides were applied.
 
 ### Tuning the taxonomy to your actual topic structure
 
@@ -185,13 +229,13 @@ taxonomy:
     5: "version"
 ```
 
-## Excel report (Step 3a)
+## Step 3a — Excel report
 
-The generated `.xlsx` workbook contains seven sheets:
+The generated `.xlsx` workbook always contains these seven sheets, built from parsed data only:
 
 | Sheet | Content |
 |-------|---------|
-| Summary | High-level counts and extraction metadata |
+| Summary | High-level counts and extraction metadata, including whether manual overrides were applied |
 | Message VPNs | VPN configuration |
 | Queues | All queues with stats and subscriptions |
 | Topic Catalogue | All unique topics parsed by taxonomy level |
@@ -200,6 +244,16 @@ The generated `.xlsx` workbook contains seven sheets:
 | Event Flows | App × Business Object matrix (C = consumes, P = produces) |
 
 > **Note on Event Flows:** The consumer side (queue subscriptions) is fully populated. The producer side requires ACL publish exception data or Event Portal, and will be completed in Phase 2.
+
+If `output/taxonomy_rules.yaml` has any [manual taxonomy overrides](#manual-taxonomy-overrides), three more sheets are added with the same content recomputed with those overrides applied:
+
+| Sheet | Content |
+|-------|---------|
+| Applications (Overrides) | Same as Applications, with both override maps applied: `topicPatternToBusinessObject.manual` reclassifications (affects Business Objects Consumed) and `domainToApplicationGroup.manual` groupings (affects Domains) |
+| Business Objects (Overrides) | Same as Business Objects, with `topicPatternToBusinessObject.manual` reclassifications applied |
+| Event Flows (Overrides) | Same matrix, built from the two sheets above |
+
+The parsed-only sheets are never replaced — the overridden sheets sit alongside them so you can compare both.
 
 ## Step 3b — Event Portal integration
 
@@ -238,7 +292,24 @@ A `src/collibra_exporter.py` script (Phase 2 deliverable) will use the Collibra 
 - **Publisher detection** is not available from SEMP alone. Who publishes to a topic requires ACL publish exception inspection or runtime message tracing (Phase 2).
 - **Schemas** are not stored in the broker and must be sourced from application teams or inferred from sample payloads (Phase 2).
 - **Wildcard ACL subscriptions** may mask specific topics in use.
-- **Topics deviating from the naming convention** are flagged in the taxonomy output but may require manual classification.
+- **Topics deviating from the naming convention** are flagged in the taxonomy output; use [manual taxonomy overrides](#manual-taxonomy-overrides) for exceptions that `taxonomy.levels` can't handle systematically.
+- **Only the `manual` sub-keys in `output/taxonomy_rules.yaml` persist across runs.** The observation lists and each override field's `auto` sub-key are regenerated from scratch every run; edits there are lost on the next run.
+- **`topicPatternToBusinessObject.manual` keys on the first 4 topic segments** (up to the businessObject level). Topics with fewer segments than that can't be matched by this override.
+- **`domainToApplicationGroup.manual` adds to, not replaces, an application's inferred domains** — it's a union with the parsed set, not a correction of it.
+
+## Tests
+
+Automated regression tests live in `tests/` and cover two things:
+
+- **Clean-state regression** of every documented command — `run_pipeline.py --mock`, each step run individually, `report_generator.py --mock` standalone, and live-mode invocation from the `cp`'d templates — run against a fresh copy of the repo's runtime files with no `config.yaml` or `taxonomy_rules.yaml` present, matching what a first-time user actually experiences.
+- **Manual taxonomy overrides** — that entries under the `manual` keys in `output/taxonomy_rules.yaml` survive regeneration across runs, get merged with the freshly auto-derived data, and produce the three `(Overrides)` sheets in the Excel report with correctly recomputed values.
+
+Tests run the actual CLI entry points as subprocesses against an isolated temporary copy of the project — never against your real `output/` directory or `config.yaml`, and never against a live broker (everything uses `--mock`).
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+pytest
+```
 
 ## References
 

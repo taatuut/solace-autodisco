@@ -6,31 +6,52 @@
 # taxonomy_rules.yaml is gitignored — it contains company-specific extracted data.
 # This example file is committed and shows the expected structure only.
 #
-# The pipeline (taxonomy_mapper.py) auto-generates and updates taxonomy_rules.yaml
-# on every run. Use this file to manually pre-seed or override rules that the
-# auto-deriver cannot resolve (wildcard subscriptions, legacy topics, etc.).
+# The pipeline (taxonomy_mapper.py) regenerates the top-level observation
+# lists below (environments, domains, businessObjects, eventTypes) and each
+# override field's `auto` sub-key from scratch on every run, based on
+# whatever topics were observed in that run's SEMP extract.
+#
+# The `manual` sub-key under each override field is different: it is read
+# back on every run and persists across regeneration. Use it to correct
+# classifications the auto-deriver got wrong or couldn't resolve (wildcards,
+# legacy topics, exceptions to the naming convention). Manual entries always
+# take precedence over `auto` for the same key.
+#
+# For systematic issues (e.g. the wrong topic segment is being read as
+# businessObject), adjust `taxonomy.levels` in config.yaml instead — that
+# affects every topic, not just individual exceptions.
 
 derivedAt: ''
-note: Auto-derived from SEMP extraction. Review and extend manually.
+note: Auto-derived observations are regenerated every run. Manual overrides under 'manual' keys persist and take precedence.
 
-# Observed environments (e.g. prod, dev, test)
+# Observed environments (e.g. prod, dev, test) — auto-derived, regenerated every run
 environments: []
 
-# Observed business domains
+# Observed business domains — auto-derived, regenerated every run
 domains: []
 
-# Observed business objects (entities events are about, e.g. Order, Invoice)
+# Observed business objects (entities events are about, e.g. Order, Invoice) — auto-derived, regenerated every run
 businessObjects: []
 
-# Observed event types / verbs (e.g. Created, Updated, Deleted)
+# Observed event types / verbs (e.g. Created, Updated, Deleted) — auto-derived, regenerated every run
 eventTypes: []
 
-# Manual overrides: map a topic prefix (up to businessObject level) to a business object.
-# Example:
-#   acme/prod/sales/Order: Order
-topicPatternToBusinessObject: {}
+# Maps a topic prefix (up to businessObject level) to a business object.
+#   auto:   observed this run from topic parsing — regenerated every run, don't edit
+#   manual: your corrections/additions — persist across runs, win over auto
+# Example (add under manual:):
+#   acme/prod/legacy: Order
+topicPatternToBusinessObject:
+  auto: {}
+  manual: {}
 
-# Manual overrides: map a domain to one or more application group names.
-# Example:
+# Maps a domain to one or more application (client username) names, for
+# cases the pipeline can't infer purely from topic subscriptions.
+#   auto:   not currently auto-derived — always empty
+#   manual: your groupings — persist across runs, added to (not replacing)
+#           each application's parsed domainsInvolved
+# Example (add under manual:):
 #   sales: [app_order_svc, app_erp_sap]
-domainToApplicationGroup: {}
+domainToApplicationGroup:
+  auto: {}
+  manual: {}

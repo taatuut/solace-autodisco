@@ -55,31 +55,84 @@ class TopicParser:
         return ">" in topic or "*" in topic
 
 
+class OverridingTopicParser(TopicParser):
+    """TopicParser that applies manual topicPatternToBusinessObject overrides
+    on top of the parsed result. Used to build the "(Overrides)" sheets
+    without duplicating the parsing/mapping logic."""
+
+    def __init__(self, levels: dict, separator: str, bo_overrides: dict):
+        super().__init__(levels, separator)
+        self.bo_overrides = bo_overrides
+
+    def parse(self, topic: str) -> dict:
+        parsed = super().parse(topic)
+        segs = parsed["_segments"]
+        if len(segs) >= 4:
+            prefix = self.separator.join(segs[:4])
+            override_bo = self.bo_overrides.get(prefix)
+            if override_bo:
+                parsed["businessObject"] = override_bo
+                parsed["_overridden"] = True
+        return parsed
+
+
 # ---------------------------------------------------------------------------
 # Rule derivation
 # ---------------------------------------------------------------------------
 
-def derive_rules(parsed_topics: list[dict], levels: dict) -> dict:
+def load_manual_overrides(rules_file: str) -> dict:
+    """Read the persisted manual override entries from an existing
+    taxonomy_rules.yaml, if present. These are the only parts of the file
+    that survive regeneration — everything else is rebuilt from scratch
+    on every run. Safe to call when the file doesn't exist yet, or predates
+    this auto/manual split (old flat-format files yield empty overrides)."""
+    path = Path(rules_file)
+    if not path.exists():
+        return {"topicPatternToBusinessObject": {}, "domainToApplicationGroup": {}}
+    with open(path) as f:
+        existing = yaml.safe_load(f) or {}
+    return {
+        "topicPatternToBusinessObject":
+            (existing.get("topicPatternToBusinessObject") or {}).get("manual") or {},
+        "domainToApplicationGroup":
+            (existing.get("domainToApplicationGroup") or {}).get("manual") or {},
+    }
+
+
+def derive_rules(parsed_topics: list[dict], levels: dict, manual_overrides: dict) -> dict:
     """
-    Auto-derive taxonomy rules from observed topic patterns.
+    Derive taxonomy rules from observed topic patterns and merge with the
+    persisted manual overrides.
 
     Returns a rules dict:
-      environments: [list of observed env values]
-      domains: [list of observed domain values]
-      businessObjects: [list of observed BO values]
-      eventTypes: [list of observed event type values]
-      topicPatternToBusinessObject: {topic_prefix -> businessObject}
-      domainToApplicationGroup: {domain -> [applications]}
+      environments: [list of observed env values]           — regenerated every run
+      domains: [list of observed domain values]              — regenerated every run
+      businessObjects: [list of observed BO values]          — regenerated every run
+      eventTypes: [list of observed event type values]       — regenerated every run
+      topicPatternToBusinessObject:
+        auto:   {topic_prefix -> businessObject}             — regenerated every run
+        manual: {topic_prefix -> businessObject}              — persists; wins over auto
+      domainToApplicationGroup:
+        auto:   {domain -> [applications]}                   — not currently derived
+        manual: {domain -> [applications]}                    — persists; wins over auto
     """
     rules = {
         "derivedAt": datetime.now().isoformat(),
-        "note": "Auto-derived from SEMP extraction. Review and extend manually.",
+        "note": "Auto-derived observations are regenerated every run. "
+                "Manual overrides under 'manual' keys persist across runs "
+                "and take precedence over 'auto' — edit only those.",
         "environments": [],
         "domains": [],
         "businessObjects": [],
         "eventTypes": [],
-        "topicPatternToBusinessObject": {},
-        "domainToApplicationGroup": {},
+        "topicPatternToBusinessObject": {
+            "auto": {},
+            "manual": manual_overrides.get("topicPatternToBusinessObject", {}),
+        },
+        "domainToApplicationGroup": {
+            "auto": {},
+            "manual": manual_overrides.get("domainToApplicationGroup", {}),
+        },
     }
 
     # Collect unique values per level (skip wildcards)
@@ -96,7 +149,7 @@ def derive_rules(parsed_topics: list[dict], levels: dict) -> dict:
     rules["businessObjects"] = sorted(level_values.get("businessObject", []))
     rules["eventTypes"] = sorted(level_values.get("eventType", []))
 
-    # Build topic prefix -> businessObject mapping
+    # Build topic prefix -> businessObject mapping (auto, observed this run)
     sep = "/"
     for pt in parsed_topics:
         if pt.get("_wildcardDepth", 0) == 0:
@@ -105,7 +158,7 @@ def derive_rules(parsed_topics: list[dict], levels: dict) -> dict:
             if bo and len(segs) >= 4:
                 # Key on first 4 segments (up to businessObject level)
                 prefix = sep.join(segs[:4])
-                rules["topicPatternToBusinessObject"][prefix] = bo
+                rules["topicPatternToBusinessObject"]["auto"][prefix] = bo
 
     return rules
 
@@ -196,6 +249,24 @@ def map_applications(vpn_data: list[dict], parser: TopicParser) -> list[dict]:
                 "connectionDetails": connections,
             }
             applications.append(app)
+
+    return applications
+
+
+def apply_domain_group_overrides(applications: list[dict], domain_group_overrides: dict) -> list[dict]:
+    """Apply manual domain -> [applicationId] groupings on top of an
+    applications list's parsed domainsInvolved. Adds to (unions with) the
+    parsed set rather than replacing it — it declares an application also
+    belongs to a domain, on top of whatever its subscriptions already show."""
+    app_extra_domains = defaultdict(set)
+    for domain, app_ids in domain_group_overrides.items():
+        for app_id in app_ids:
+            app_extra_domains[app_id].add(domain)
+
+    for app in applications:
+        extra = app_extra_domains.get(app.get("applicationId"))
+        if extra:
+            app["domainsInvolved"] = sorted(set(app.get("domainsInvolved", [])) | extra)
 
     return applications
 
@@ -310,8 +381,10 @@ def main():
     topic_parser = TopicParser(levels, separator)
     parsed_topics = [topic_parser.parse(t) for t in all_topics]
 
-    # Derive rules
-    rules = derive_rules(parsed_topics, levels)
+    # Derive rules, merging in any manual overrides persisted from a
+    # previous run of output/taxonomy_rules.yaml
+    manual_overrides = load_manual_overrides(rules_file)
+    rules = derive_rules(parsed_topics, levels, manual_overrides)
     Path(rules_file).parent.mkdir(parents=True, exist_ok=True)
     with open(rules_file, "w") as f:
         yaml.dump(rules, f, default_flow_style=False, sort_keys=False)
@@ -324,6 +397,27 @@ def main():
     # Build business object catalogue
     bo_catalogue = build_bo_catalogue(parsed_topics)
     print(f"Business objects catalogued: {len(bo_catalogue)}")
+
+    # Recompute with manual overrides applied, for the report's "(Overrides)"
+    # sheets — only when overrides are actually present.
+    bo_overrides = manual_overrides.get("topicPatternToBusinessObject", {})
+    domain_overrides = manual_overrides.get("domainToApplicationGroup", {})
+    has_manual_overrides = bool(bo_overrides) or bool(domain_overrides)
+
+    if has_manual_overrides:
+        override_parser = OverridingTopicParser(levels, separator, bo_overrides)
+        parsed_topics_overridden = [override_parser.parse(t) for t in all_topics]
+        applications_overridden = map_applications(vpn_data, override_parser)
+        applications_overridden = apply_domain_group_overrides(
+            applications_overridden, domain_overrides)
+        bo_catalogue_overridden = build_bo_catalogue(parsed_topics_overridden)
+        print(f"Manual overrides applied: "
+              f"{len(bo_overrides)} business object pattern(s), "
+              f"{len(domain_overrides)} domain group(s)")
+    else:
+        parsed_topics_overridden = None
+        applications_overridden = None
+        bo_catalogue_overridden = None
 
     # Compose output
     out_dir = Path(config.get("output", {}).get("report_dir", "output/reports"))
@@ -340,6 +434,10 @@ def main():
         "parsedTopics": parsed_topics,
         "applications": applications,
         "businessObjectCatalogue": bo_catalogue,
+        "hasManualOverrides": has_manual_overrides,
+        "parsedTopicsOverridden": parsed_topics_overridden,
+        "applicationsOverridden": applications_overridden,
+        "businessObjectCatalogueOverridden": bo_catalogue_overridden,
         "msgVpns": extract.get("msgVpns", []),
         "vpnData": vpn_data,
     }

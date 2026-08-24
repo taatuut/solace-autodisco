@@ -7,9 +7,16 @@ Sheets:
   2. Message VPNs     — VPN-level configuration
   3. Queues           — all queues with stats
   4. Topic Catalogue  — unique topics parsed by taxonomy
-  5. Applications     — client usernames / application identities
-  6. Business Objects — BO catalogue with event types
-  7. Event Flows      — matrix: which app produces/consumes which BO
+  5. Applications     — client usernames / application identities (parsed only)
+  6. Business Objects — BO catalogue with event types (parsed only)
+  7. Event Flows      — matrix: which app produces/consumes which BO (parsed only)
+
+  When output/taxonomy_rules.yaml carries manual taxonomy overrides
+  (see taxonomy_mapper.py), three more sheets are added with the same
+  content recomputed with those overrides applied:
+  8. Applications (Overrides)
+  9. Business Objects (Overrides)
+  10. Event Flows (Overrides)
 
 Usage:
     python src/report_generator.py [--config config.yaml] [--input <mapped_data.json>] [--mock]
@@ -153,6 +160,8 @@ def build_summary(wb, mapped: dict):
         ("Client applications", len(apps)),
         ("Business objects", len(bos)),
         ("Active connections (runtime)", total_clients),
+        ("Manual taxonomy overrides applied",
+         "Yes — see '(Overrides)' sheets" if mapped.get("hasManualOverrides") else "No"),
     ]
     header_row(ws, [("Metric", 28), ("Value", 22)], row=row)
     row += 1
@@ -236,8 +245,8 @@ def build_topics(wb, mapped: dict):
     freeze_and_filter(ws)
 
 
-def build_applications(wb, mapped: dict):
-    ws = wb.create_sheet("Applications")
+def build_applications(wb, sheet_name: str, applications: list[dict]):
+    ws = wb.create_sheet(sheet_name)
     cols = [
         ("VPN", 16), ("Application ID", 24), ("Enabled", 10),
         ("Client Profile", 20), ("ACL Profile", 20),
@@ -245,7 +254,7 @@ def build_applications(wb, mapped: dict):
         ("Domains", 22), ("Active Connections", 18),
     ]
     header_row(ws, cols)
-    for i, app in enumerate(mapped.get("applications", []), 1):
+    for i, app in enumerate(applications, 1):
         data_row(ws, [
             app.get("msgVpnName"),
             app.get("applicationId"),
@@ -262,15 +271,15 @@ def build_applications(wb, mapped: dict):
     freeze_and_filter(ws)
 
 
-def build_business_objects(wb, mapped: dict):
-    ws = wb.create_sheet("Business Objects")
+def build_business_objects(wb, sheet_name: str, bo_catalogue: list[dict]):
+    ws = wb.create_sheet(sheet_name)
     cols = [
         ("Business Object", 24), ("Domain", 18),
         ("Environments", 22), ("Event Types", 30),
         ("Versions", 14), ("Topic Count", 12), ("Sample Topics", 50),
     ]
     header_row(ws, cols)
-    for i, bo in enumerate(mapped.get("businessObjectCatalogue", []), 1):
+    for i, bo in enumerate(bo_catalogue, 1):
         topics = bo.get("topics", [])
         data_row(ws, [
             bo.get("businessObject"),
@@ -286,16 +295,16 @@ def build_business_objects(wb, mapped: dict):
     freeze_and_filter(ws)
 
 
-def build_event_flows(wb, mapped: dict):
+def build_event_flows(wb, sheet_name: str, applications: list[dict], bo_catalogue: list[dict]):
     """
     Matrix sheet: rows = applications, columns = business objects.
     Cell value: P (produces), C (consumes), P/C (both).
     Note: Without publish-side telemetry, we can only confirm consume side.
     Publisher inference requires ACL publish topics or runtime message tracking.
     """
-    ws = wb.create_sheet("Event Flows")
-    apps = mapped.get("applications", [])
-    bos = [bo["businessObject"] for bo in mapped.get("businessObjectCatalogue", [])]
+    ws = wb.create_sheet(sheet_name)
+    apps = applications
+    bos = [bo["businessObject"] for bo in bo_catalogue]
 
     if not bos:
         ws["A1"] = "No business objects found. Run taxonomy_mapper first."
@@ -372,9 +381,24 @@ def generate_report(mapped: dict, out_path: Path):
     build_vpns(wb, mapped)
     build_queues(wb, mapped)
     build_topics(wb, mapped)
-    build_applications(wb, mapped)
-    build_business_objects(wb, mapped)
-    build_event_flows(wb, mapped)
+    build_applications(wb, "Applications", mapped.get("applications", []))
+    build_business_objects(wb, "Business Objects", mapped.get("businessObjectCatalogue", []))
+    build_event_flows(wb, "Event Flows",
+                       mapped.get("applications", []),
+                       mapped.get("businessObjectCatalogue", []))
+
+    # When output/taxonomy_rules.yaml carries manual overrides, add a second,
+    # clearly-labelled set of sheets recomputed with those overrides applied —
+    # alongside the parsed-only sheets above, not in place of them.
+    if mapped.get("hasManualOverrides"):
+        # Sheet names kept under Excel's 31-character limit.
+        build_applications(wb, "Applications (Overrides)",
+                            mapped.get("applicationsOverridden") or [])
+        build_business_objects(wb, "Business Objects (Overrides)",
+                                mapped.get("businessObjectCatalogueOverridden") or [])
+        build_event_flows(wb, "Event Flows (Overrides)",
+                           mapped.get("applicationsOverridden") or [],
+                           mapped.get("businessObjectCatalogueOverridden") or [])
 
     wb.save(out_path)
     print(f"Report saved: {out_path}")
