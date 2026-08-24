@@ -217,7 +217,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# ACME Solace AI - local config and output (all contain company-specific data)
+# Solace AutoDisco - local config and output (all contain company-specific data)
 config.yaml
 output/raw/
 output/reports/
@@ -225,3 +225,6 @@ output/taxonomy_rules.yaml
 !output/taxonomy_rules.example.yaml
 *.xlsx
 **/.DS_Store
+
+# Word documents (engagement-specific deliverables; not part of the generic project)
+*.docx

@@ -439,7 +439,7 @@ def main():
         else:
             print(f"{ts} {msg}")
 
-    log("ACME Solace AI — SEMP Extractor v1.0")
+    log("Solace AutoDisco — SEMP Extractor v1.0")
 
     if args.mock:
         result = extract_mock(args.vpn, log)

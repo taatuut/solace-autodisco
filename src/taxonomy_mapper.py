@@ -1,9 +1,9 @@
 """
 taxonomy_mapper.py — Step 2
 Maps extracted SEMP data to client applications and business objects
-using ACME topic taxonomy rules.
+using configurable topic taxonomy rules.
 
-ACME topic convention assumed (configurable in config.yaml):
+Topic convention assumed (configurable in config.yaml):
   <prefix>/<environment>/<domain>/<businessObject>/<eventType>/<version>
   Example: acme/prod/sales/Order/Created/v1
 
@@ -254,7 +254,7 @@ def parser_is_wildcard(pt: dict) -> bool:
 
 def main():
     arg_parser = argparse.ArgumentParser(
-        description="Map SEMP extract to ACME topic taxonomy"
+        description="Map SEMP extract to configured topic taxonomy"
     )
     arg_parser.add_argument("--config", default="config.yaml")
     arg_parser.add_argument("--input", default=None,

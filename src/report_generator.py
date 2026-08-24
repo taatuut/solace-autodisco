@@ -115,7 +115,7 @@ def build_summary(wb, mapped: dict):
     ws = wb.create_sheet("Summary")
     ws.sheet_view.showGridLines = False
 
-    ws["A1"] = "ACME Solace Event Mesh — Metadata Report"
+    ws["A1"] = "Solace Event Mesh — Metadata Report"
     ws["A1"].font = FONT_TITLE
     ws.merge_cells("A1:D1")
     ws["A1"].alignment = CENTER
@@ -435,7 +435,7 @@ def main():
             out_dir = Path("output/reports")
         out_dir.mkdir(parents=True, exist_ok=True)
         ts_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = out_dir / f"pvm_solace_report_{ts_str}.xlsx"
+        out_path = out_dir / f"solace_autodisco_report_{ts_str}.xlsx"
 
     generate_report(mapped, out_path)
     return str(out_path)

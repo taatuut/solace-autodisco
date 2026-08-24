@@ -1,10 +1,10 @@
-# ACME Solace AI
+# Solace AutoDisco
 
-Automated discovery and cataloguing of events, topics, and applications on the ACME SAP Advanced Event Mesh (AEM) / Solace platform.
+Automated discovery and cataloguing of events, topics, and applications on a SAP Advanced Event Mesh (AEM) / Solace platform.
 
 ## What this project does
 
-ACME's event-driven integration landscape (SAP AEM, powered by Solace) carries business events between ERP, WMS, e-commerce, finance, and logistics applications. Without automation, there is no reliable overview of what is flowing, how it is defined, or which applications produce and consume which events.
+An event-driven integration landscape (SAP AEM, powered by Solace) carries business events between applications such as ERP, WMS, e-commerce, finance, and logistics systems. Without automation, there is no reliable overview of what is flowing, how it is defined, or which applications produce and consume which events.
 
 This project automates that discovery and produces three outputs:
 
@@ -12,25 +12,22 @@ This project automates that discovery and produces three outputs:
 |--------|------|-------------|
 | Raw broker data | `output/raw/semp_extract_*.json` | Full SEMP v2 extraction |
 | Mapped & enriched data | `output/reports/mapped_data_*.json` | Topics parsed, applications identified, business objects catalogued |
-| Excel report (Step 3a) | `output/reports/pvm_solace_report_*.xlsx` | Seven-sheet workbook for stakeholder review |
+| Excel report (Step 3a) | `output/reports/solace_autodisco_report_*.xlsx` | Seven-sheet workbook for stakeholder review |
 
 ## Project structure
 
 ```
-solace-autodisco/                          # committed to Git
+solace-autodisco/                       # committed to Git
 ├── src/
 │   ├── __init__.py
 │   ├── semp_extractor.py               # Step 1: Extract from SEMP v2 API
-│   ├── taxonomy_mapper.py              # Step 2: Map topics to ACME taxonomy
+│   ├── taxonomy_mapper.py              # Step 2: Map topics to your taxonomy
 │   └── report_generator.py            # Step 3a: Generate Excel report
 ├── run_pipeline.py                     # Single-command full pipeline
 ├── config.example.yaml                 # Connection config template
 ├── requirements.txt
-├── output/
-│   └── taxonomy_rules.example.yaml    # Taxonomy rules template
-└── docs/
-    ├── ACME Solace AI.docx
-    └── ACME_Event_Governance_Roadmap_v1.0.docx
+└── output/
+    └── taxonomy_rules.example.yaml    # Taxonomy rules template
 
 # created locally from templates, gitignored
 ├── config.yaml                         # Your SEMP credentials
@@ -85,7 +82,7 @@ python3 run_pipeline.py --config config.yaml
 To target a specific VPN:
 
 ```bash
-python3 run_pipeline.py --config config.yaml --vpn ACME_PROD
+python3 run_pipeline.py --config config.yaml --vpn PROD
 ```
 
 ### Running steps individually
@@ -123,7 +120,7 @@ From the Solace SEMP v2 API (`/SEMP/v2/config` and `/SEMP/v2/monitor`):
 
 ## Topic taxonomy (Step 2)
 
-ACME topics follow (or approximate) this structure:
+Topics typically follow (or approximate) this structure:
 
 ```
 <prefix> / <environment> / <domain> / <businessObject> / <eventType> / <version>
@@ -135,12 +132,12 @@ The mapper auto-derives rules from observed topics and stores them in `output/ta
 
 ### Tuning the taxonomy to your actual topic structure
 
-> **Note:** Taxonomy tuning only makes sense when running against a broker with ACME's actual topic taxonomy. Runs against a demo or sandbox broker with non-standard topic naming will show mismatched or empty parsed columns — this is expected and not a problem. Perform the tuning steps below once connected to a broker that carries real ACME integration traffic.
+> **Note:** Taxonomy tuning only makes sense when running against a broker with your organisation's actual topic taxonomy. Runs against a demo or sandbox broker with non-standard topic naming will show mismatched or empty parsed columns — this is expected and not a problem. Perform the tuning steps below once connected to a broker that carries real integration traffic.
 
-After that first run against a broker with ACME's actual topic taxonomy, open the Excel report:
+After that first run against a broker with your actual topic taxonomy, open the Excel report:
 
 ```
-output/reports/pvm_solace_report_<timestamp>.xlsx
+output/reports/solace_autodisco_report_<timestamp>.xlsx
 ```
 
 Go to the **Topic Catalogue** sheet. The first column (`Topic (raw)`) lists every unique topic string found on the broker. The remaining columns show how the current `config.yaml` level definitions parsed each segment.
@@ -165,7 +162,7 @@ If the parsed columns look wrong — for example `environment` is showing applic
 
 ### Taxonomy level configuration
 
-Edit `config.yaml` to match ACME's actual convention if it differs:
+Edit `config.yaml` to match your actual convention if it differs:
 
 ```yaml
 taxonomy:
@@ -226,19 +223,6 @@ For organisations using Collibra as an enterprise metadata catalogue, the `mappe
 | Queue | Data Flow |
 
 A `src/collibra_exporter.py` script (Phase 2 deliverable) will use the Collibra REST API to create and maintain these assets, enabling data lineage, GDPR/DPIA support, and cross-platform discoverability alongside database and API assets.
-
-## Governance roadmap
-
-See `docs/ACME_Event_Governance_Roadmap_v1.0.docx` for the full four-phase roadmap covering:
-
-- Current state assessment and gap analysis
-- Target architecture (Event Portal as system of record)
-- Phase 1: Discovery & baseline catalogue (this project)
-- Phase 2: Schema registry & publisher discovery (agentic)
-- Phase 3: Naming standards & governance enforcement
-- Phase 4: Design-First & full automation
-- AI tooling strategy (Claude + Event Portal MCP + Collibra)
-- Decision points and immediate next steps
 
 ## Known limitations (Phase 1)
 

@@ -1,4 +1,4 @@
-# ACME Solace AI - Taxonomy Rules
+# Solace AutoDisco - Taxonomy Rules
 # This is the template file. Copy to output/taxonomy_rules.yaml before first run.
 #
 #   cp output/taxonomy_rules.example.yaml output/taxonomy_rules.yaml

@@ -5,7 +5,7 @@ Chains: extract → map → report in a single command.
 Usage:
     python run_pipeline.py --mock              # demo with synthetic data
     python run_pipeline.py --config config.yaml   # live broker
-    python run_pipeline.py --config config.yaml --vpn ACME_PROD
+    python run_pipeline.py --config config.yaml --vpn PROD
 """
 
 import argparse
@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ACME Solace AI — full pipeline")
+    parser = argparse.ArgumentParser(description="Solace AutoDisco — full pipeline")
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--vpn", default=None)
     parser.add_argument("--mock", action="store_true",

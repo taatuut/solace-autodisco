@@ -1,4 +1,4 @@
-# ACME Solace AI - Connection Configuration
+# Solace AutoDisco - Connection Configuration
 # Copy this file to config.yaml and fill in your values.
 # config.yaml is gitignored - never commit credentials.
 
@@ -32,7 +32,7 @@ taxonomy:
   # IMPORTANT: Adjust these to match the actual topic strings on your broker.
   # Run the pipeline once, open the Topic Catalogue sheet in the Excel report,
   # and inspect the raw topic strings to determine the correct level mapping.
-  # The defaults below assume: pvm/<env>/<domain>/<businessObject>/<eventType>/<version>
+  # The defaults below assume: <prefix>/<env>/<domain>/<businessObject>/<eventType>/<version>
   # If level 1 shows application names (infor, opcenter, ...) instead of
   # environments, your convention may be: <system>/<object>/<event>/... — adjust
   # accordingly and rerun.
@@ -53,7 +53,7 @@ event_portal:
   # Solace Event Portal API token (from Cloud Console -> API Tokens)
   api_token: "your-event-portal-api-token"
   # Application Domain to target in Event Portal
-  application_domain: "ACME Integration"
+  application_domain: "Event Integration"
 
 # ---------------------------------------------------------------------------
 # OPTIONAL: Collibra (Step 3c)
