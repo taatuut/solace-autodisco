@@ -12,7 +12,7 @@ This project automates that discovery and produces three outputs:
 |--------|------|-------------|
 | Raw broker data | `output/raw/semp_extract_*.json` | Full SEMP v2 extraction |
 | Mapped & enriched data | `output/reports/mapped_data_*.json` | Topics parsed, applications identified, business objects catalogued |
-| Excel report (Step 3a) | `output/reports/solace_autodisco_report_*.xlsx` | Multi-sheet workbook for stakeholder review — 7 sheets, or 10 if manual taxonomy overrides are in use |
+| Excel report (Step 3) | `output/reports/solace_autodisco_report_*.xlsx` | Multi-sheet workbook for stakeholder review — 7 sheets, or 10 if manual taxonomy overrides are in use |
 
 ## Project structure
 
@@ -22,7 +22,7 @@ solace-autodisco/                       # committed to Git
 │   ├── __init__.py
 │   ├── semp_extractor.py               # Step 1: Extract from SEMP v2 API
 │   ├── taxonomy_mapper.py              # Step 2: Map topics to your taxonomy
-│   └── report_generator.py            # Step 3a: Generate Excel report
+│   └── report_generator.py            # Step 3: Generate Excel report
 ├── tests/
 │   └── test_pipeline.py                # Regression tests (see Tests below)
 ├── run_pipeline.py                     # Single-command full pipeline
@@ -30,6 +30,8 @@ solace-autodisco/                       # committed to Git
 ├── requirements.txt
 ├── requirements-dev.txt                # Adds pytest, for running tests/
 ├── pytest.ini
+├── .gitignore
+├── LICENSE
 └── output/
     └── taxonomy_rules.example.yaml    # Taxonomy rules template
 
@@ -101,7 +103,7 @@ python3 src/semp_extractor.py --mock
 # Step 2 only (uses most recent raw extract)
 python3 src/taxonomy_mapper.py
 
-# Step 3a only (uses most recent mapped data)
+# Step 3 only (uses most recent mapped data)
 python3 src/report_generator.py
 ```
 
@@ -118,7 +120,7 @@ python3 src/report_generator.py --mock
 3. **Review the Event Flows matrix.** The *Event Flows* sheet shows which applications consume which business objects. Share with the integration team to identify gaps and validate ownership.
 4. **Provision an Event Portal API token** and run the Phase 2 import script (planned) to push the catalogue into Event Portal Designer/Catalog.
 
-## What is extracted (Step 1)
+## Step 1 — What is extracted
 
 From the Solace SEMP v2 API (`/SEMP/v2/config` and `/SEMP/v2/monitor`):
 
@@ -131,7 +133,9 @@ From the Solace SEMP v2 API (`/SEMP/v2/config` and `/SEMP/v2/monitor`):
 - **Connected clients** (monitor API) — runtime view of active connections
 - **Queue stats** (monitor API) — message counts, spool usage, bind counts
 
-## Topic taxonomy (Step 2)
+For interactive, ad-hoc exploration of a broker's live topic traffic — complementary to this pipeline's automated, point-in-time SEMP extraction — see the [Solace Topic Explorer](https://explorer.solace.dev/), a browser-based tool for browsing topics and message flows on a Solace broker in real time.
+
+## Step 2 — Topic taxonomy
 
 Every organisation names its topics differently. The taxonomy is what maps *your* raw topic strings into the business-meaningful facets (domain, business object, event type, ...) used throughout the Topic Catalogue, Business Objects, and Event Flows sheets in the Excel report — without it, the pipeline only has opaque topic strings to work with.
 
@@ -229,7 +233,7 @@ taxonomy:
     5: "version"
 ```
 
-## Step 3a — Excel report
+## Step 3 — Excel report
 
 The generated `.xlsx` workbook always contains these seven sheets, built from parsed data only:
 
@@ -255,7 +259,7 @@ If `output/taxonomy_rules.yaml` has any [manual taxonomy overrides](#manual-taxo
 
 The parsed-only sheets are never replaced — the overridden sheets sit alongside them so you can compare both.
 
-## Step 3b — Event Portal integration
+## Step 4 — Event Portal integration
 
 The Solace Event Portal provides a searchable catalogue and Design-First workflow for event-driven assets. Populating it from the mapped data follows this sequence:
 
@@ -270,7 +274,7 @@ The Solace Event Portal provides a searchable catalogue and Design-First workflo
 
 A dedicated `src/event_portal_importer.py` is planned for Phase 2.
 
-## Step 3c — Collibra integration (optional)
+## Step 5 — Collibra integration (optional)
 
 > **Collibra is entirely optional.** The pipeline (extract → map → report) runs without any Collibra credentials. If `collibra` keys are absent from `config.yaml` the pipeline is unaffected. The integration is a Phase 2 deliverable for organisations that already have Collibra licensed.
 
@@ -316,6 +320,7 @@ pytest
 | Resource | URL |
 |----------|-----|
 | SEMP v2 API Reference (AEM) | https://help.pubsub.em.services.cloud.sap/Admin/SEMP/SEMP-API-Ref.htm |
+| Solace Topic Explorer | https://explorer.solace.dev/ |
 | Solace Cloud REST API v2 | https://api.solace.dev/cloud/reference |
 | Event Portal REST API | https://api.solace.dev/eventPortal/reference |
 | Event Portal MCP Server | https://github.com/SolaceLabs/solace-platform-mcp |
