@@ -2,6 +2,8 @@
 
 Automated discovery and cataloguing of events, topics, and applications for SAP Advanced Event Mesh (AEM) / Solace Cloud Platform brokers.
 
+> **Disclaimer:** this repo is not officially supported by Solace. All efforts have been made to make this code working and safe, but usage is at your own responsibility.
+
 ## What this project does
 
 An event-driven integration landscape (SAP AEM, powered by Solace) carries business events between applications such as ERP, WMS, e-commerce, finance, and logistics systems. Without automation, there is no reliable overview of what is flowing, how it is defined, or which applications produce and consume which events.
