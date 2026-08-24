@@ -1,6 +1,6 @@
 # Solace AutoDisco
 
-Automated discovery and cataloguing of events, topics, and applications on a SAP Advanced Event Mesh (AEM) / Solace platform.
+Automated discovery and cataloguing of events, topics, and applications for SAP Advanced Event Mesh (AEM) / Solace Cloud Platform brokers.
 
 ## What this project does
 
