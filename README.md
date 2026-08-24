@@ -1,5 +1,7 @@
 # Solace AutoDisco
 
+[![Tests](https://github.com/taatuut/solace-autodisco/actions/workflows/test.yml/badge.svg)](https://github.com/taatuut/solace-autodisco/actions/workflows/test.yml)
+
 Automated discovery and cataloguing of events, topics, and applications for SAP Advanced Event Mesh (AEM) / Solace Cloud Platform brokers.
 
 > **Disclaimer:** this repo is not officially supported by Solace. All efforts have been made to make this code working and safe, but usage is at your own responsibility.
