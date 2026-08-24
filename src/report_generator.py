@@ -18,7 +18,6 @@ Usage:
 
 import argparse
 import json
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -398,13 +397,12 @@ def main():
     if args.mock:
         # Run extract then map in-process
         print("Running SEMP extractor (mock)...")
-        import src.semp_extractor as ex
+        import semp_extractor as ex
         sys.argv = ["semp_extractor", "--mock"]
         extract_file = ex.main()
 
         print("Running taxonomy mapper...")
-        import importlib, types
-        import src.taxonomy_mapper as tm
+        import taxonomy_mapper as tm
         sys.argv = ["taxonomy_mapper", "--input", extract_file]
         mapped_file = tm.main()
     elif args.input:

@@ -264,22 +264,13 @@ def main():
                             help="Generate from mock data (run semp_extractor --mock first)")
     args = arg_parser.parse_args()
 
-    # Load config
+    # Load config — falls back to the committed config.example.yaml (single
+    # source of truth for taxonomy defaults) when config.yaml doesn't exist yet.
     cfg_path = Path(args.config)
-    if cfg_path.exists():
-        with open(cfg_path) as f:
-            config = yaml.safe_load(f)
-    else:
-        # Fall back to minimal defaults for mock/dev
-        config = {
-            "taxonomy": {
-                "separator": "/",
-                "levels": {0: "prefix", 1: "environment", 2: "domain",
-                           3: "businessObject", 4: "eventType", 5: "version"},
-                "rules_file": "output/taxonomy_rules.yaml",
-            },
-            "output": {"raw_dir": "output/raw", "report_dir": "output/reports"},
-        }
+    if not cfg_path.exists():
+        cfg_path = cfg_path.parent / "config.example.yaml"
+    with open(cfg_path) as f:
+        config = yaml.safe_load(f)
 
     tax_cfg = config.get("taxonomy", {})
     levels = {int(k): v for k, v in tax_cfg.get("levels", {}).items()}

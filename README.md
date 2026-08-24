@@ -53,17 +53,13 @@ python3 -m pip install -r requirements.txt
 
 # Optionally, if needed upgrade pip
 python3 -m pip install --upgrade pip
-
-# Create local config and taxonomy rules from templates (once)
-cp config.example.yaml config.yaml
-cp output/taxonomy_rules.example.yaml output/taxonomy_rules.yaml
 ```
-
-Edit `config.yaml` with your SEMP credentials before running against a live broker.
 
 > All subsequent commands assume the venv is active (`source .venv/bin/activate`).
 
 ### Demo with mock data (no broker needed)
+
+No further setup required — the mock pipeline needs no `config.yaml` or taxonomy rules file; it uses built-in defaults.
 
 ```bash
 python3 run_pipeline.py --mock
@@ -73,7 +69,14 @@ This runs the full extract → map → report pipeline with synthetic data and w
 
 ### Live broker
 
-Fill in your SEMP credentials in `config.yaml` (created from the template in Prerequisites), then run:
+Running against a real broker needs local config and taxonomy rules files, created once from the committed templates:
+
+```bash
+cp config.example.yaml config.yaml
+cp output/taxonomy_rules.example.yaml output/taxonomy_rules.yaml
+```
+
+Fill in your SEMP credentials in `config.yaml`, then run:
 
 ```bash
 python3 run_pipeline.py --config config.yaml
@@ -96,6 +99,12 @@ python3 src/taxonomy_mapper.py
 
 # Step 3a only (uses most recent mapped data)
 python3 src/report_generator.py
+```
+
+`report_generator.py` also accepts `--mock` on its own, running extract → map → report as a single command without going through `run_pipeline.py`:
+
+```bash
+python3 src/report_generator.py --mock
 ```
 
 ## Immediate next steps (after first live run)
