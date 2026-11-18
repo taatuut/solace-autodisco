@@ -2,3 +2,4 @@ requests>=2.31.0
 PyYAML>=6.0
 openpyxl>=3.1.0
 rich>=13.0.0
+certifi>=2026.10.18  # security minimum (osv-scanner, 2026-11-18)
